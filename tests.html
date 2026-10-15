@@ -1,0 +1,23 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Purrse tests</title>
+<style>body{font:16px system-ui;background:#0a0a0a;color:#e4e4e7;padding:24px}li{margin:8px 0}.ok{color:#22c55e}.fail{color:#ef4444}</style>
+<h1>Purrse tests</h1><ul id="results"></ul>
+<script type="module">
+import {parseMoney,formatMoney,evaluateExpression} from "./js/money.js";
+import {periodFor,daysLeft} from "./js/dates.js";
+import {spent,budgetStatus,safeToSpendToday} from "./js/budgets.js";
+const out=document.querySelector("#results");
+function test(name,fn){const li=document.createElement("li");try{if(fn()!==true)throw Error("assertion failed");li.className="ok";li.textContent=`PASS ${name}`}catch(e){li.className="fail";li.textContent=`FAIL ${name}: ${e.message}`}out.append(li)}
+test("INR parsing",()=>parseMoney("₹1,23,456.78")===12345678);
+test("USD formatting",()=>formatMoney(-12345,{currency:"USD"}).includes("-$123.45"));
+test("JPY formatting",()=>formatMoney(12345,{currency:"JPY"}).includes("123"));
+test("safe expression precedence",()=>evaluateExpression("250+80*2")===410);
+test("safe expression parentheses",()=>evaluateExpression("(10+5)*2")===30);
+test("invalid expression",()=>evaluateExpression("10/0")===null);
+test("period start day",()=>periodFor("2026-10-24",25).start==="2026-09-25"&&periodFor("2026-10-25",25).start==="2026-10-25");
+test("days left",()=>daysLeft("2026-10-25",periodFor("2026-10-25",25))===31);
+test("budget thresholds",()=>budgetStatus(10000,7999).status==="ok"&&budgetStatus(10000,8000).status==="warn"&&budgetStatus(10000,10000).status==="over");
+test("budget spent excludes income",()=>spent([{type:"expense",amount:2500,date:"2026-10-25",categoryId:"food"},{type:"income",amount:5000,date:"2026-10-25",categoryId:"salary"}],"food",periodFor("2026-10-25"))===2500);
+test("safe to spend today",()=>safeToSpendToday([{type:"expense",amount:3000,date:"2026-10-25",categoryId:"food"}],10000,periodFor("2026-10-25"),"2026-10-25")===1000);
+</script>
